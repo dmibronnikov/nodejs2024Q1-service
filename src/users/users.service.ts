@@ -53,6 +53,7 @@ export class UsersService {
 
     user.password = updatePasswordDto.newPassword;
     user.updatedAt = Date.now();
+    user.version += 1;
 
     return this.storage.upsertUser(user);
   }

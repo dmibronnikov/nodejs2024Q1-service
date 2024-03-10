@@ -10,7 +10,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new ResponseTransformerInterceptor());
-  app.setGlobalPrefix('api');
+  // app.setGlobalPrefix('api');
 
   const yamlSchema = await readFile('./doc/api.yaml', 'utf-8');
   const apiSchema = parse(yamlSchema);
