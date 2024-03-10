@@ -1,16 +1,14 @@
-import { Optional } from '@nestjs/common';
-import { IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateTrackDto {
   @IsNotEmpty()
+  @IsString()
   name: string;
 
-  @Optional()
   artistId: string | null; // refers to Artist
-
-  @Optional()
   albumId: string | null; // refers to Album
 
   @IsNotEmpty()
+  @IsNumber()
   duration: number; // integer number
 }

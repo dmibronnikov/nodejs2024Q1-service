@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { User } from 'src/entities/user';
 import { Track } from 'src/entities/track';
 import { Artist } from 'src/entities/artist';
+import { Album } from 'src/entities/album';
 import { NotFoundException } from '@nestjs/common';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class Storage {
   private users: User[] = [];
   private tracks: Track[] = [];
   private artists: Artist[] = [];
+  private albums: Album[] = [];
 
   fetchUsers(): User[] {
     return this.users;
@@ -116,8 +118,8 @@ export class Storage {
   }
 
   deleteArtist(id: string) {
-    const artistIndex = this.artists.findIndex((track) => {
-      return track.id === id;
+    const artistIndex = this.artists.findIndex((artist) => {
+      return artist.id === id;
     });
 
     if (artistIndex < 0) {
@@ -125,9 +127,60 @@ export class Storage {
     }
 
     this.artists.splice(artistIndex, 1);
+
     this.tracks.forEach((track) => {
       if (track.artistId === id) {
         track.artistId = null;
+      }
+    });
+
+    this.albums.forEach((album) => {
+      if (album.artistId === id) {
+        album.artistId = null;
+      }
+    });
+  }
+
+  fetchAlbums(): Album[] {
+    return this.albums;
+  }
+
+  fetchAlbum(id: string): Album | undefined {
+    return this.albums.find((album) => {
+      return album.id === id;
+    });
+  }
+
+  upsertAlbum(album: Album): Album {
+    const existingAlbum = this.albums.find((existingAlbum) => {
+      return existingAlbum.id === album.id;
+    });
+
+    if (existingAlbum === undefined) {
+      this.albums.push(album);
+      return album;
+    } else {
+      existingAlbum.artistId = album.artistId;
+      existingAlbum.name = album.name;
+      existingAlbum.year = album.year;
+      return existingAlbum;
+    }
+  }
+
+  deleteAlbum(id: string) {
+    const albumIndex = this.albums.findIndex((album) => {
+      return album.id === id;
+    });
+
+    if (albumIndex < 0) {
+      throw new NotFoundException(`Album with id ${id} not found`);
+    }
+
+    this.albums.splice(albumIndex, 1);
+
+    this.tracks.forEach((track) => {
+      if (track.albumId === id) {
+        track.albumId = null;
       }
     });
   }
