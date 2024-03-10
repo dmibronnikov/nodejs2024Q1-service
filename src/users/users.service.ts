@@ -16,10 +16,16 @@ export class UsersService {
     return this.users;
   }
 
-  get(id: string): User | undefined {
-    return this.users.find((user) => {
+  get(id: string): User {
+    const user = this.users.find((user) => {
       return user.id === id;
     });
+
+    if (user === undefined) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    return user;
   }
 
   create(userDto: CreateUserDto): User {
