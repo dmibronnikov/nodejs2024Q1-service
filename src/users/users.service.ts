@@ -7,19 +7,18 @@ import { User } from 'src/entities/user';
 import { CreateUserDto } from './dto/create-user.dto';
 import { v4 as uuid4 } from 'uuid';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { Storage } from 'src/storage/storage';
 
 @Injectable()
 export class UsersService {
-  private readonly users: User[] = [];
+  constructor(private storage: Storage) {}
 
   getAll(): User[] {
-    return this.users;
+    return this.storage.fetchUsers();
   }
 
   get(id: string): User {
-    const user = this.users.find((user) => {
-      return user.id === id;
-    });
+    const user = this.storage.fetchUser(id);
 
     if (user === undefined) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -38,14 +37,11 @@ export class UsersService {
       Date.now(),
     );
 
-    this.users.push(user);
-    return user;
+    return this.storage.upsertUser(user);
   }
 
   updatePassword(updatePasswordDto: UpdatePasswordDto, userId: string): User {
-    const user = this.users.find((user) => {
-      return user.id === userId;
-    });
+    const user = this.storage.fetchUser(userId);
 
     if (user === undefined) {
       throw new NotFoundException(`User with id ${userId} not found`);
@@ -58,18 +54,10 @@ export class UsersService {
     user.password = updatePasswordDto.newPassword;
     user.updatedAt = Date.now();
 
-    return user;
+    return this.storage.upsertUser(user);
   }
 
   delete(userId: string) {
-    const userIndex = this.users.findIndex((user) => {
-      return user.id === userId;
-    });
-
-    if (userIndex < 0) {
-      throw new NotFoundException(`User with id ${userId} not found`);
-    }
-
-    this.users.splice(userIndex, 1);
+    this.storage.deleteUser(userId);
   }
 }

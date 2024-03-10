@@ -2,19 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Track } from 'src/entities/track';
 import { v4 as uuid4 } from 'uuid';
 import { CreateTrackDto } from './dto/create-track.dto';
+import { Storage } from 'src/storage/storage';
 
 @Injectable()
 export class TracksService {
-  private readonly tracks: Track[] = [];
+  constructor(private storage: Storage) {}
 
   getAll(): Track[] {
-    return this.tracks;
+    return this.storage.fetchTracks();
   }
 
   get(id: string): Track {
-    const track = this.tracks.find((track) => {
-      return track.id === id;
-    });
+    const track = this.storage.fetchTrack(id);
 
     if (track === undefined) {
       throw new NotFoundException(`Track with id ${id} not found`);
@@ -32,14 +31,11 @@ export class TracksService {
       trackDto.albumId,
     );
 
-    this.tracks.push(track);
-    return track;
+    return this.storage.upsertTrack(track);
   }
 
   update(trackDto: CreateTrackDto, trackId: string): Track {
-    const track = this.tracks.find((track) => {
-      return track.id === trackId;
-    });
+    const track = this.storage.fetchTrack(trackId);
 
     if (track === undefined) {
       throw new NotFoundException(`Track with id ${trackId} not found`);
@@ -50,18 +46,10 @@ export class TracksService {
     track.duration = trackDto.duration;
     track.name = trackDto.name;
 
-    return track;
+    return this.storage.upsertTrack(track);
   }
 
   delete(trackId: string) {
-    const trackIndex = this.tracks.findIndex((track) => {
-      return track.id === trackId;
-    });
-
-    if (trackIndex < 0) {
-      throw new NotFoundException(`Track with id ${trackId} not found`);
-    }
-
-    this.tracks.splice(trackIndex, 1);
+    this.storage.deleteTrack(trackId);
   }
 }
