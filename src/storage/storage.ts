@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { User } from 'src/entities/user';
 import { Track } from 'src/entities/track';
 import { Artist } from 'src/entities/artist';
 import { Album } from 'src/entities/album';
 import { NotFoundException } from '@nestjs/common';
+import { Favorites } from 'src/entities/favorites';
+import { FavoritesResponseDto } from 'src/favorites/dto/favorites-response-dto';
 
 @Injectable()
 export class Storage {
@@ -11,6 +13,7 @@ export class Storage {
   private tracks: Track[] = [];
   private artists: Artist[] = [];
   private albums: Album[] = [];
+  private favorites: Favorites = new Favorites([], [], []);
 
   fetchUsers(): User[] {
     return this.users;
@@ -90,6 +93,10 @@ export class Storage {
     }
 
     this.tracks.splice(trackIndex, 1);
+
+    try {
+      this.deleteTrackFromFavorites(id);
+    } catch {}
   }
 
   fetchArtists(): Artist[] {
@@ -139,6 +146,10 @@ export class Storage {
         album.artistId = null;
       }
     });
+
+    try {
+      this.deleteArtistFromFavorites(id);
+    } catch {}
   }
 
   fetchAlbums(): Album[] {
@@ -183,5 +194,101 @@ export class Storage {
         track.albumId = null;
       }
     });
+
+    try {
+      this.deleteAlbumFromFavorites(id);
+    } catch {}
+  }
+
+  fetchFavorites(): FavoritesResponseDto {
+    const favoriteArtists = this.artists.filter((artist) => {
+      return this.favorites.artists.includes(artist.id);
+    });
+
+    const favoriteAlbums = this.albums.filter((album) => {
+      return this.favorites.albums.includes(album.id);
+    });
+
+    const favoriteTracks = this.tracks.filter((track) => {
+      return this.favorites.tracks.includes(track.id);
+    });
+
+    return new FavoritesResponseDto(
+      favoriteArtists,
+      favoriteAlbums,
+      favoriteTracks,
+    );
+  }
+
+  addTrackToFavorites(id: string) {
+    const track = this.tracks.find((track) => {
+      return track.id == id;
+    });
+
+    if (track === undefined) {
+      throw new UnprocessableEntityException(`Track with ${id} doesn't exist`);
+    }
+
+    this.favorites.tracks.push(track.id);
+  }
+
+  deleteTrackFromFavorites(id: string) {
+    const favoriteTrackIndex = this.favorites.tracks.findIndex((trackId) => {
+      return trackId === id;
+    });
+
+    if (favoriteTrackIndex < 0) {
+      throw new NotFoundException(`Track with ${id} is not found`);
+    }
+
+    this.favorites.tracks.splice(favoriteTrackIndex, 1);
+  }
+
+  addAlbumToFavorites(id: string) {
+    const album = this.albums.find((album) => {
+      return album.id == id;
+    });
+
+    if (album === undefined) {
+      throw new UnprocessableEntityException(`Album with ${id} doesn't exist`);
+    }
+
+    this.favorites.albums.push(album.id);
+  }
+
+  deleteAlbumFromFavorites(id: string) {
+    const favoriteAlbumIndex = this.favorites.albums.findIndex((albumId) => {
+      return albumId === id;
+    });
+
+    if (favoriteAlbumIndex < 0) {
+      throw new NotFoundException(`Album with ${id} is not found`);
+    }
+
+    this.favorites.albums.splice(favoriteAlbumIndex, 1);
+  }
+
+  addArtistToFavorites(id: string) {
+    const artist = this.artists.find((artist) => {
+      return artist.id == id;
+    });
+
+    if (artist === undefined) {
+      throw new UnprocessableEntityException(`Artist with ${id} doesn't exist`);
+    }
+
+    this.favorites.artists.push(artist.id);
+  }
+
+  deleteArtistFromFavorites(id: string) {
+    const favoriteArtistIndex = this.favorites.artists.findIndex((artistId) => {
+      return artistId === id;
+    });
+
+    if (favoriteArtistIndex < 0) {
+      throw new NotFoundException(`Artist with ${id} is not found`);
+    }
+
+    this.favorites.artists.splice(favoriteArtistIndex, 1);
   }
 }
